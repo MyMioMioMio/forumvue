@@ -192,7 +192,24 @@ export default {
     },
     //跳转到帖子
     showPost(row) {
-      console.log(row);
+      // console.log(pid);
+      //设置axios跨域访问时携带凭证
+      axios.defaults.withCredentials = true;
+      //上传pid和sid保存到服务器session
+      axios.get("http://10.62.192.125/posts/" + row.pid + '/' + row.sid)
+          .then(res => {
+            if (res.data.code == 30001) {
+              //成功则跳转到post页面
+              //var href = res.data.data;
+              this.$router.push('/post');
+            } else {
+              this.$message({
+                showClose: true,
+                message: res.data.msg,
+                type: 'error'
+              });
+            }
+          });
     },
 
     //跳转到贴吧
@@ -202,8 +219,8 @@ export default {
       axios.get("http://10.62.192.125/sections/" + sid)
           .then((res) => {
             if (res.data.code == 30001) {
-              var href = res.data.data;
-              this.$router.push(href);
+              //var href = res.data.data;
+              this.$router.push('/section');
             } else {
               this.$message({
                 showClose: true,

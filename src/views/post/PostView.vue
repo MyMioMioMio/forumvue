@@ -1,4 +1,5 @@
 <template>
+
   <el-container>
     <!--头部分-->
     <el-header>
@@ -22,9 +23,9 @@
         </el-menu-item>
 
         <el-menu-item style="float: right">
-          <span>{{ userPost.username }}  </span>
+          <span>{{ user.username }}  </span>
           <el-dropdown>
-            <el-avatar :size="50" :src="userPost.userPhoto" :fit="fit"></el-avatar>
+            <el-avatar :size="50" :src="user.userPhoto" :fit="fit"></el-avatar>
             <el-dropdown-menu slot="dropdown">
               <el-dropdown-item v-if="loginFlag == true">个人页面</el-dropdown-item>
               <!--              <el-dropdown-item>登录</el-dropdown-item>-->
@@ -59,20 +60,20 @@
         <!--楼主信息-->
         <el-row>
           <el-col :span="2">
-            <el-avatar :size="60" :src="userPost.userPhoto" :fit="fit"></el-avatar>
+            <el-avatar :size="60" :src="postUserVo.userPhoto" :fit="fit"></el-avatar>
             <br>
-            <span style="font-size: small; text-align: left">{{ userPost.username }}</span><br>
+            <span style="font-size: small; text-align: left">{{ postUserVo.username }}</span><br>
             <el-tag>楼主</el-tag>
           </el-col>
 
           <el-col :span="22" class="text-align-left">
             <el-row style="line-height: 20px">
               <el-col>
-                <h2>{{userPost.postsTitle}}</h2>
+                <h2>{{ postUserVo.postsTitle }}</h2>
               </el-col>
             </el-row>
-            <span class="text-common">{{userPost.postsDescription}}</span><br>
-            <i class="el-icon-time">{{ userPost.postsDateTime }}</i>
+            <span class="text-common">{{ postUserVo.postsDescription }}</span><br>
+            <i class="el-icon-time">{{ postUserVo.postsDateTime }}</i>
             <span class="float-right">点赞预留位</span>
           </el-col>
         </el-row>
@@ -93,20 +94,21 @@
                     <el-avatar :size="60" :src="scope.row.userPhoto" :fit="fit"></el-avatar>
                     <br>
                     <span style="font-size: small">{{ scope.row.username }}</span><br>
-                    <el-tag v-if="scope.row.uid == userPost.uid">楼主</el-tag>
+                    <el-tag v-if="scope.row.uid == postUserVo.uid">楼主</el-tag>
                   </el-col>
 
                   <el-col :span="22" class="text-align-left">
-                    <span class="text-common">{{scope.row.replyDescription}}</span><br>
-                    <i class="el-icon-time">{{ scope.row.replyDateTime}}</i>
+                    <span class="text-common">{{ scope.row.replyDescription }}</span><br>
+                    <i class="el-icon-time">{{ scope.row.replyDateTime }}</i>
                     <span class="float-right">点赞预留位</span>
                     <el-collapse>
                       <el-collapse-item>
                         <template slot="title">
                           查看回复
                         </template>
-                        <div>与现实生活一致：与现实生活的流程、逻辑保持一致，遵循用户习惯的语言和概念；</div>
-                        <div>在界面中一致：所有的元素和结构需保持一致，比如：设计样式、图标和文本、元素的位置等。</div>
+                        <div>
+
+                        </div>
                       </el-collapse-item>
                     </el-collapse>
                   </el-col>
@@ -180,20 +182,16 @@ export default {
       //页内条数
       pageSize: 5,
 
-      //用户模型
-      userPost: {
+      //楼主模型
+      postUserVo: {
         pid: "",
-        uid: "200002",
-        username: "testuser",
+        uid: "",
+        username: "",
         userPhoto: "",
-        postsTitle: "健康生活",
-        postsDescription: "本人挺磕素睦的，并且这也是一个热门cp，所以看到有人说素睦邪道我都是啪的点进去就是反驳，但看了些帖子后确实得承认以下几点\n" +
-            "1:睦在素祥相争的时候无疑都是站在了祥子那边\n" +
-            "2:对素世看起来像“暗恋”的感情更多是由内疚感驱动的\n" +
-            "3:即在优先祥子的情况下对素世妥协，比如前八集任由素世弄她的惊世智慧，但在关键的地方仍然没有支持素世\n" +
-            "4结论:睦早已做出选择 素世也已经切割\n" +
-            "唉，希望第二季素睦能发力吧（但狗团剧情不会太多吧）",
-        postsDateTime: "2024-04-14 13:01:21",
+        postsTitle: "",
+        postsDescription: "",
+        postsDateTime: "",
+        sid: ""
       },
       //登录标志
       loginFlag: false,
@@ -206,17 +204,8 @@ export default {
         sectionPhoto: "",
         sectionDatetime: ""
       },
-      //帖子信息
-      post: {
-        pid: '',
-        uid: '',
-        username: 'name',
-        userPhoto: '',
-        postsTitle: '',
-        postsDescription: '',
-        sid: '',
-        postsDatetime: ''
-      },
+      //用户模型
+      user: {},
       //回复数组
       replys: replysArr
     };
@@ -233,7 +222,7 @@ export default {
               //获取成功
               this.sectionData = res.data.data;
               //获取所有帖子信息
-              this.getPosts();
+              this.getPost();
             } else {
               //获取失败则返回上一页
               this.$message({
@@ -241,14 +230,54 @@ export default {
                 message: res.data.msg,
                 type: 'error'
               });
-              this.$router.back();
+              this.lastPage();
             }
           });
     },
 
     //获取帖子信息
-    getPosts() {
+    getPost() {
+      //设置axios跨域访问时携带凭证
+      axios.defaults.withCredentials = true;
+      axios.get("http://10.62.192.125/posts")
+          .then((res) => {
+            //console.log(res.data)
+            if (res.data.code == 20001) {
+              //获取成功
+              this.postUserVo = res.data.data;
+              //获取所有回复信息
+              this.getReplys();
+            } else {
+              //获取失败则返回上一页
+              this.$message({
+                showClose: true,
+                message: res.data.msg,
+                type: 'error'
+              });
+              this.lastPage();
+            }
+          });
+    },
 
+    //获取回复信息
+    getReplys() {
+      var params = this.currentPage + "/" + this.pageSize + "/" + this.postUserVo.pid;
+      axios.get("http://10.62.192.125/replys/" + params)
+          .then(res => {
+            if (res.data.code == 20001) {
+              //获取成功
+              this.replys = res.data.data.replysData;
+              this.totalPage = res.data.data.totalPage;
+            } else {
+              //获取失败则返回上一页
+              this.$message({
+                showClose: true,
+                message: res.data.msg,
+                type: 'error'
+              });
+              this.lastPage();
+            }
+          });
     },
 
     //顶部导航栏
@@ -261,14 +290,13 @@ export default {
     handleSizeChange(val) {
       //console.log(`每页 ${val} 条`);
       this.pageSize = val;
-      this.getPosts();
+      this.getReplys();
     },
-
     //当前页变化
     handleCurrentChange(val) {
       //console.log(`当前页: ${val}`);
       this.currentPage = val;
-      this.getPosts();
+      this.getReplys();
     },
 
     //返回上一页
@@ -281,6 +309,12 @@ export default {
       return 50;
     }
   },
+  mounted() {
+    //获取吧信息
+    this.getSection();
+    //获取贴子信息
+    //this.getPost();已放到getSection中
+  }
 }
 </script>
 
