@@ -79,7 +79,7 @@
         </el-row>
         <el-divider></el-divider>
       </div>
-      <!--帖子展示-->
+      <!--回复展示-->
       <div>
         <template>
           <el-table
@@ -101,14 +101,49 @@
                     <span class="text-common">{{ scope.row.replyDescription }}</span><br>
                     <i class="el-icon-time">{{ scope.row.replyDateTime }}</i>
                     <span class="float-right">点赞预留位</span>
-                    <el-collapse>
-                      <el-collapse-item>
+                    <el-collapse v-model="activeNames">
+                      <el-collapse-item @click.native="getToReply(scope.row.rid)" :name="scope.row.rid">
                         <template slot="title">
                           查看回复
                         </template>
-                        <div>
+                        <!--回复的回复-->
+                        <template>
+                          <el-table
+                              :data="toReplys"
+                              style="width: 100%"
+                              :show-header="false"
+                          >
+                            <el-table-column>
+                              <template v-slot="scope">
+                                <el-row>
+                                  <el-col :span="2">
+                                    <el-avatar :size="60" :src="scope.row.userPhoto" :fit="fit"></el-avatar>
+                                    <br>
+                                    <span style="font-size: small">{{ scope.row.username }}</span><br>
+                                    <el-tag v-if="scope.row.uid == postUserVo.uid">楼主</el-tag>
+                                  </el-col>
 
-                        </div>
+                                  <el-col :span="22" class="text-align-left">
+                                    <span class="text-common">{{ scope.row.replyDescription }}</span><br>
+                                    <i class="el-icon-time">{{ scope.row.replyDateTime }}</i>
+                                    <span class="float-right">点赞预留位</span>
+                                  </el-col>
+                                </el-row>
+                              </template>
+                            </el-table-column>
+                          </el-table>
+                          <el-pagination
+                              @size-change="handleSizeChange2(scope.row.rid, $event)"
+                              @current-change="handleCurrentChange2(scope.row.rid, $event)"
+                              :current-page="1"
+                              :page-sizes="[5, 10, 20]"
+                              :page-size="5"
+                              layout="total, sizes, prev, pager, next, jumper"
+                              :total="totalPage2"
+                              background
+                          >
+                          </el-pagination>
+                        </template>
                       </el-collapse-item>
                     </el-collapse>
                   </el-col>
@@ -167,8 +202,9 @@ export default {
     // replysArr.fill(fakeReplys2, 1, 2);
     //********************************************************
     return {
+
       //展开评论指示
-      activeNames: 1,
+      activeNames: 0,
 
       //图片样式为填充
       fit: "cover",
@@ -181,6 +217,13 @@ export default {
       totalPage: 400,
       //页内条数
       pageSize: 5,
+
+      //回复的回复的当前页码
+      currentPage2: 1,
+      //回复的回复的总页数
+      totalPage2: 400,
+      //回复的回复的页内条数
+      pageSize2: 5,
 
       //楼主模型
       postUserVo: {
@@ -207,7 +250,9 @@ export default {
       //用户模型
       user: {},
       //回复数组
-      replys: replysArr
+      replys: replysArr,
+      //回复的回复数组
+      toReplys: []
     };
   },
   methods: {
@@ -217,11 +262,11 @@ export default {
       axios.defaults.withCredentials = true;
       axios.get("http://10.62.192.125/sections")
           .then((res) => {
-            console.log(res.data)
+            //console.log(res.data)
             if (res.data.code == 20001) {
               //获取成功
               this.sectionData = res.data.data;
-              //获取所有帖子信息
+              //获取帖子信息
               this.getPost();
             } else {
               //获取失败则返回上一页
@@ -280,6 +325,21 @@ export default {
           });
     },
 
+    //获得回复的回复
+    getToReply(rid) {
+      var params = this.currentPage2 + "/" + this.pageSize2 + "/" + this.postUserVo.pid + '/' + rid;
+      axios.get("http://10.62.192.125/replys/" + params)
+          .then(res => {
+            if (res.data.code == 20001) {
+              //获取成功
+              this.totalPage2 = res.data.data.totalPage;
+              this.toReplys = res.data.data.replysData;
+            } else {
+              this.toReplys = [];
+            }
+          });
+    },
+
     //顶部导航栏
     handleSelect(key, keyPath) {
       console.log(key, keyPath);
@@ -297,6 +357,23 @@ export default {
       //console.log(`当前页: ${val}`);
       this.currentPage = val;
       this.getReplys();
+    },
+
+    //回复的回复页内条数变化
+    handleSizeChange2(rid, val) {
+      //console.log(`每页 ${val} 条`);
+      this.pageSize2 = val;
+      // console.log(rid);
+      // console.log(this.pageSize2);
+      this.getToReply(rid);
+    },
+    //回复的回复当前页变化
+    handleCurrentChange2(rid, val) {
+      //console.log(`当前页: ${val}`);
+      this.currentPage2 = val;
+      // console.log(rid);
+      // console.log(this.currentPage2);
+      this.getToReply(rid);
     },
 
     //返回上一页
