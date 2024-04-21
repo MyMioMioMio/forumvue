@@ -23,14 +23,14 @@
 
         <el-menu-item style="float: right">
           <span>{{user.username}}  </span>
-          <el-dropdown>
+          <el-dropdown @command="handleCommand">
             <el-avatar :size="50" :src="user.userPhoto" :fit="fit"></el-avatar>
             <el-dropdown-menu slot="dropdown">
               <el-dropdown-item v-if="loginFlag == true">个人页面</el-dropdown-item>
               <!--              <el-dropdown-item>登录</el-dropdown-item>-->
-              <el-dropdown-item v-if="loginFlag == true">登出</el-dropdown-item>
-              <el-dropdown-item v-if="loginFlag == false">登录</el-dropdown-item>
-              <el-dropdown-item v-if="loginFlag == false">注册</el-dropdown-item>
+              <el-dropdown-item v-if="loginFlag == true" command="quitLogin">登出</el-dropdown-item>
+              <el-dropdown-item v-if="loginFlag == false" command="/login">登录</el-dropdown-item>
+              <el-dropdown-item v-if="loginFlag == false" command="/register">注册</el-dropdown-item>
             </el-dropdown-menu>
           </el-dropdown>
         </el-menu-item>
@@ -230,11 +230,58 @@ export default {
             }
           });
       //console.log(sid);
+    },
+
+    //处理下拉菜单
+    handleCommand(command) {
+      if (command == "quitLogin") {
+        this.quitLogin();
+      } else {
+        this.$router.push(command);
+      }
+
+    },
+
+    //检查有无登录，并获取登录信息
+    getUser() {
+      //设置axios跨域访问时携带凭证
+      axios.defaults.withCredentials = true;
+      //获取用户信息
+      axios.get("http://10.62.192.125/users")
+          .then(res => {
+            if (res.data.code == 20001) {
+              //获取成功
+              this.user = res.data.data;
+              this.loginFlag = true;
+            } else {
+              this.loginFlag = false;
+            }
+          });
+    },
+
+    //退出登录
+    quitLogin() {
+      //设置axios跨域访问时携带凭证
+      axios.defaults.withCredentials = true;
+      //退出登录
+      axios.get("http://10.62.192.125/users/quitlogin")
+          .then(res => {
+            if (res.data.code == 60001) {
+              //退出成功
+              this.$message({
+                showClose: true,
+                message: res.data.msg,
+                type: 'success'
+              });
+              this.$router.go(0);
+            }
+          });
     }
   },
 
   mounted() {
     this.getAll();
+    this.getUser();
   }
 }
 

@@ -1,25 +1,44 @@
 <template>
+  <!--注册页面-->
   <div class="loginBody">
     <div class="loginData">
       <el-form ref="form" :model="form" status-icon :rules="loginRules">
         <el-form-item>
           <div class="loginTitle">
-            <h1>WelCome!</h1>
+            <h1>创建用户</h1>
           </div>
         </el-form-item>
-        <el-form-item prop="username">
-          <el-input prefix-icon="el-icon-user" v-model="form.username" placeholder="请输入用户名"></el-input>
+        <el-form-item prop="username" label="用户名">
+          <el-input v-model="form.username" placeholder="请输入用户名"></el-input>
         </el-form-item>
-        <el-form-item prop="password">
-          <el-input prefix-icon="el-icon-unlock" placeholder="请输入密码" v-model="form.password"
-                    show-password></el-input>
+        <el-form-item prop="password" label="密码">
+          <el-input placeholder="请输入密码" v-model="form.password" show-password></el-input>
         </el-form-item>
-        <el-form-item prop="remember">
-          <el-checkbox v-model="form.remember" style="float: left">记住密码</el-checkbox>
-          <router-link to="/register" style="float: right">没有账号？立即注册</router-link>
+        <el-form-item prop="repassword" label="确认密码">
+          <el-input placeholder="请再次输入密码" v-model="form.repassword" show-password></el-input>
+        </el-form-item>
+        <el-form-item prop="gender">
+          <span style="float: left; font-size: large">男</span>
+          <el-switch v-model="form.gender"
+                     inactive-value="男"
+                     active-value="女"
+                     inactive-color="#409EFF"
+                     active-color="pink"
+                     style="float: left"
+          ></el-switch>
+          <span style="float: left; font-size: large">女</span>
+        </el-form-item>
+        <el-form-item prop="userSignature" label="个性签名">
+          <el-input
+              type="textarea"
+              :rows="2"
+              placeholder="请输入个性签名"
+              v-model="form.userSignature">
+          </el-input>
         </el-form-item>
         <el-form-item>
-          <el-button type="primary" style="width: 100%; font-size: large" @click="loginCheck('form')">登录</el-button>
+          <el-button type="primary" style="width: 100%; font-size: large" @click="checkRegister('form')">创建
+          </el-button>
         </el-form-item>
         <el-form-item>
           <el-button type="danger" style="width: 100%;font-size: large" @click="resetForm('form')">重置</el-button>
@@ -28,12 +47,11 @@
     </div>
   </div>
 </template>
-
 <script>
 import axios from "axios";
 
 export default {
-  name: 'LoginView',
+  name: 'RegisterView',
   data() {
     //用户名校验
     const validateUsername = (rule, value, callback) => {
@@ -43,7 +61,21 @@ export default {
         callback(new Error('用户名前后不能有空格！'));
         // '用户名前后不能有空格！'
       } else {
-        callback();
+        //检查用户名是否存在
+        var flag = true; //true表示用户名已存在
+        //设置axios跨域访问时携带凭证
+        axios.defaults.withCredentials = true;
+        axios.get("http://10.62.192.125/users/" + this.form.username)
+            .then(res => {
+              if (res.data.code == 20001) {
+                flag = res.data.data;
+              }
+              if (flag) {
+                callback("用户名已存在！");
+              } else {
+                callback();
+              }
+            });
       }
     }
     //密码校验
@@ -57,17 +89,30 @@ export default {
         callback()
       }
     }
+    //重复密码校验
+    const validateRePassword = (rule, value, callback) => {
+      if (value === '') {
+        callback(new Error('请再次输入密码'));
+      } else if (value !== this.form.password) {
+        callback(new Error('两次输入密码不一致!'));
+      } else {
+        callback();
+      }
+    }
+
     return {
       form: {
         username: '',
         password: '',
-        //是否保存密码
-        remember: false
+        repassword: '',
+        gender: '男',
+        userSignature: '这个人很神秘，什么都没有写。。。。',
       },
       //表单校验规则
       loginRules: {
         username: [{required: true, trigger: 'blur', validator: validateUsername}],
-        password: [{required: true, trigger: 'blur', validator: validatePassword}]
+        password: [{required: true, trigger: 'blur', validator: validatePassword}],
+        repassword: [{required: true, trigger: 'blur', validator: validateRePassword}]
       },
 
     }
@@ -77,12 +122,12 @@ export default {
     resetForm(form) {
       this.$refs[form].resetFields();
     },
-
-    //登录检查
-    loginCheck(form) {
+    checkRegister(form) {
+      //console.log(this.form);
       this.$refs[form].validate((valid) => {
+        //校验信息
         if (valid) {
-          this.login();
+          this.register();
         } else {
           //console.log('error submit!!');
           return false;
@@ -90,55 +135,32 @@ export default {
       });
     },
 
-    //异步登录
-    login() {
+    //注册
+    register() {
       //设置axios跨域访问时携带凭证
       axios.defaults.withCredentials = true;
-      //发送信息
-      axios.post("http://10.62.192.125/users", this.form)
+      axios.post("http://10.62.192.125/users/register", this.form)
           .then(res => {
-            if (res.data.code == 40001) {
-              //登录成功
+            if (res.data.code == 50001) {
               this.$message({
                 showClose: true,
                 message: res.data.msg,
                 type: 'success'
               });
-              this.$router.push(res.data.data);
+              this.$router.push('/login');
             } else {
-              //登录失败
               this.$message({
                 showClose: true,
                 message: res.data.msg,
                 type: 'error'
               });
-              //重置表单
               this.resetForm('form');
             }
           });
-    },
-
-    //检测有无记住登录的信息
-    checkCookie() {
-      this.form.username = this.getCookie("TieUsername");
-      this.form.password = this.getCookie("TiePassword");
-    },
-
-    //查询cookie指定字段名
-    getCookie(name) {
-      // 解析cookie字符串，查找名为 "name" 的cookie
-      const cookies = document.cookie.split(';').map(cookie => cookie.trim());
-      for (const cookie of cookies) {
-        const [cookieName, cookieValue] = cookie.split('=');
-        if (cookieName === name) {
-          return decodeURIComponent(cookieValue);
-        }
-      }
-      return '';
     }
   },
   mounted() {
-    this.checkCookie();
+
   }
 }
 </script>
@@ -155,11 +177,11 @@ export default {
   background-repeat: no-repeat;
   position: fixed;
   line-height: 100%;
-  padding-top: 150px;
+  padding-top: 50px;
 }
 
 .loginData {
-  width: 20%;
+  width: 25%;
   transform: translate(-50%);
   margin-left: 50%;
 }
