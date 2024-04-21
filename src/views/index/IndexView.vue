@@ -20,7 +20,7 @@
             <el-button slot="append" icon="el-icon-search"></el-button>
           </el-input>
         </el-menu-item>
-
+        <!--用户行为-->
         <el-menu-item style="float: right">
           <span>{{user.username}}  </span>
           <el-dropdown @command="handleCommand">

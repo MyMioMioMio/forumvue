@@ -21,16 +21,17 @@
           </el-input>
         </el-menu-item>
 
+        <!--用户行为-->
         <el-menu-item style="float: right">
-          <span>{{ user.username }}  </span>
-          <el-dropdown>
+          <span>{{user.username}}  </span>
+          <el-dropdown @command="handleCommand">
             <el-avatar :size="50" :src="user.userPhoto" :fit="fit"></el-avatar>
             <el-dropdown-menu slot="dropdown">
               <el-dropdown-item v-if="loginFlag == true">个人页面</el-dropdown-item>
               <!--              <el-dropdown-item>登录</el-dropdown-item>-->
-              <el-dropdown-item v-if="loginFlag == true">登出</el-dropdown-item>
-              <el-dropdown-item v-if="loginFlag == false">登录</el-dropdown-item>
-              <el-dropdown-item v-if="loginFlag == false">注册</el-dropdown-item>
+              <el-dropdown-item v-if="loginFlag == true" command="quitLogin">登出</el-dropdown-item>
+              <el-dropdown-item v-if="loginFlag == false" command="/login">登录</el-dropdown-item>
+              <el-dropdown-item v-if="loginFlag == false" command="/register">注册</el-dropdown-item>
             </el-dropdown-menu>
           </el-dropdown>
         </el-menu-item>
@@ -68,7 +69,7 @@
         >
           <el-menu-item index="1">看帖</el-menu-item>
           <el-menu-item style="float: right">
-            <el-button type="primary" plain>发帖</el-button>
+            <el-button type="primary" plain @click="postDialogVisible = true">发帖</el-button>
           </el-menu-item>
         </el-menu>
         <div class="line"></div>
@@ -124,30 +125,57 @@
         >
         </el-pagination>
       </div>
+      <!--新建贴子页面-->
+      <el-dialog title="新建贴子" :visible.sync="postDialogVisible" width="40%">
+        <el-form :model="post" ref="post" :rules="postRules">
+          <el-form-item label="标题" prop="postsTitle">
+            <el-input v-model="post.postsTitle"
+                      type="text"
+                      maxlength="10"
+                      show-word-limit
+            ></el-input>
+          </el-form-item>
+          <el-form-item label="内容" prop="postsDescription">
+            <el-input type="textarea"
+                      v-model="post.postsDescription"
+                      maxlength="1000"
+                      :rows="10"
+                      show-word-limit
+            ></el-input>
+          </el-form-item>
+          <el-form-item>
+            <el-button type="primary" @click="submitPostCheck('post')">提交</el-button>
+            <el-button @click="postDialogVisible = false">取消</el-button>
+          </el-form-item>
+        </el-form>
+      </el-dialog>
+
     </el-main>
     <!--制作信息-->
     <el-footer>
       <span style="text-align: center; font-size: x-small; color: #99a9bf">制作byMyMioMioMio</span>
     </el-footer>
   </el-container>
+
+
 </template>
 <script>
 import axios from "axios";
 
 export default {
   data() {
-    //帖子临时数据
-    // const fakePost = {
-    //   pid: 200001,
-    //   uid: 200001,
-    //   username: 'name',
-    //   userPhoto: '',
-    //   postsTitle: '第二个帖子标题',
-    //   postsDescription: '第二个帖子内容：《叶圣陶散文》为“名家经典珍藏”丛书之一，收录了叶圣陶先生的散文精品数十篇。这些作品内容丰富，题材各异，构思精巧，文笔精巧、语言幽默、内蕴深厚、风格恬淡，充分显示了叶圣陶先生的文学功底及丰富的人生阅历，从一个侧面反映了作者的思想感情及创作风格，非常值得一读。叶圣陶是20世纪中国一位杰出的作家、教育家和出版家，又是中国现代儿童文学创作的先行者。作为散文家，他早期和周作人、朱自清共同成为文学研究会散文创作的中坚，后来又成为开明派散文的代表，其散文被一九三五年出版的《中国新文学大系》选录的篇数仅次于周作人、鲁迅和朱自清。',
-    //   sid: 200002,
-    //   postsDatetime: ''
-    // }
+    //贴子标题校验
+    const validatepostsTitle = (rule, value, callback) => {
+      if (!value) {
+        callback(new Error('标题不能为空！'));
+      } else {
+        callback();
+      }
+    }
     return {
+      //新建贴子对话框标志
+      postDialogVisible: false,
+
       //图片样式为填充
       fit: "cover",
 
@@ -176,7 +204,7 @@ export default {
       post: {
         pid: '',
         uid: '',
-        username: 'name',
+        username: '',
         userPhoto: '',
         postsTitle: '',
         postsDescription: '',
@@ -184,7 +212,12 @@ export default {
         postsDatetime: ''
       },
       //帖子
-      posts: []
+      posts: [],
+
+      //贴子表单校验规则
+      postRules: {
+        postsTitle: [{required: true, trigger: 'blur', validator: validatepostsTitle}]
+      }
     };
   },
   methods: {
@@ -277,11 +310,110 @@ export default {
     //返回上一页
     lastPage() {
       this.$router.back();
-    }
+    },
+
+    //处理下拉菜单
+    handleCommand(command) {
+      if (command == "quitLogin") {
+        this.quitLogin();
+      } else {
+        this.$router.push(command);
+      }
+
+    },
+
+    //检查有无登录，并获取登录信息
+    getUser() {
+      //设置axios跨域访问时携带凭证
+      axios.defaults.withCredentials = true;
+      //获取用户信息
+      axios.get("http://10.62.192.125/users")
+          .then(res => {
+            if (res.data.code == 20001) {
+              //获取成功
+              this.user = res.data.data;
+              this.loginFlag = true;
+            } else {
+              this.loginFlag = false;
+            }
+          });
+    },
+
+    //退出登录
+    quitLogin() {
+      //设置axios跨域访问时携带凭证
+      axios.defaults.withCredentials = true;
+      //退出登录
+      axios.get("http://10.62.192.125/users/quitlogin")
+          .then(res => {
+            if (res.data.code == 60001) {
+              //退出成功
+              this.$message({
+                showClose: true,
+                message: res.data.msg,
+                type: 'success'
+              });
+              this.$router.go(0);
+            }
+          });
+    },
+    //校验贴子
+    submitPostCheck(post) {
+      this.$refs[post].validate((valid) => {
+        if (valid) {
+          this.submitPost();
+        } else {
+          //console.log('error submit!!');
+          return false;
+        }
+      });
+    },
+    //提交贴子
+    submitPost() {
+      //数据预处理
+      this.post.uid = this.user.uid;
+      this.post.sid = this.sectionData.sid;
+      //设置axios跨域访问时携带凭证
+      axios.defaults.withCredentials = true;
+      //提交贴子
+      axios.post("http://10.62.192.125/posts", this.post)
+          .then(res => {
+            if (res.data.code == 30001) {
+              //提交成功
+              this.$message({
+                showClose: true,
+                message: res.data.msg,
+                type: 'success'
+              });
+              //关闭对话框
+              this.postDialogVisible = false;
+              //清空post
+              this.post = {
+                pid: '',
+                uid: '',
+                username: '',
+                userPhoto: '',
+                postsTitle: '',
+                postsDescription: '',
+                sid: '',
+                postsDatetime: ''
+              }
+              //刷新页面
+              this.getPosts();
+            } else {
+              this.$message({
+                showClose: true,
+                message: res.data.msg,
+                type: 'error'
+              });
+            }
+          });
+    },
   },
   mounted() {
     this.getSection();
-    console.log(this.sectionData);
+    this.getUser();
+    //console.log(this.sectionData);
     //this.getPosts();//已经放到this.getSection()方法中去执行了
   }
 }
