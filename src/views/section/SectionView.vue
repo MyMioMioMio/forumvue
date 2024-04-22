@@ -252,7 +252,7 @@ export default {
           .then((res) => {
             if (res.data.code == 20001) {
               this.posts = res.data.data.pageData;
-              this.totalPage = res.data.totalPage;
+              this.totalPage = res.data.data.totalPage;
             } else {
               this.$message({
                 showClose: true,

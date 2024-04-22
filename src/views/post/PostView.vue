@@ -24,7 +24,7 @@
 
         <!--用户行为-->
         <el-menu-item style="float: right">
-          <span>{{user.username}}  </span>
+          <span>{{ user.username }}  </span>
           <el-dropdown @command="handleCommand">
             <el-avatar :size="50" :src="user.userPhoto" :fit="fit"></el-avatar>
             <el-dropdown-menu slot="dropdown">
@@ -53,7 +53,10 @@
             </el-image>
           </el-col>
           <el-col :span="20" class="text-align-left">
-            <span style="font-size: x-large">{{ sectionData.sectionName }}</span><br>
+            <el-link @click="showSection">
+              <span style="font-size: x-large">{{ sectionData.sectionName }}</span>
+            </el-link>
+            <br>
             <span>{{ sectionData.sectionDescription }}</span>
           </el-col>
         </el-row>
@@ -80,7 +83,7 @@
         </el-row>
         <el-divider></el-divider>
       </div>
-      <!--回复展示-->
+      <!--层主展示-->
       <div>
         <template>
           <el-table
@@ -144,6 +147,13 @@
                               background
                           >
                           </el-pagination>
+                          <!--回复层主-->
+                          <el-row>
+                            <el-button type="primary" size="small" @click="postReply(scope.row.rid)">回复</el-button>
+                          </el-row>
+                          <el-row>
+                            <el-input type="textarea" v-model="replyDescription" :rows="3" maxlength="100" show-word-limit></el-input>
+                          </el-row>
                         </template>
                       </el-collapse-item>
                     </el-collapse>
@@ -167,6 +177,13 @@
             background
         >
         </el-pagination>
+        <!--回复楼主-->
+        <el-row>
+          <el-button type="primary" size="small" class="float-left" @click="postReply(0)">回复</el-button>
+        </el-row>
+        <el-row>
+          <el-input type="textarea" v-model="replyDescription" :rows="3" maxlength="1000" show-word-limit></el-input>
+        </el-row>
       </div>
     </el-main>
     <!--制作信息-->
@@ -180,28 +197,6 @@ import axios from "axios";
 
 export default {
   data() {
-    //帖子临时数据
-    const fakeReplys1 = {
-      rid: 200001,
-      uid: 200001,
-      username: 'name',
-      userPhoto: '',
-      replyDescription: '这是一则内容\n能够换行\n能给个看着',
-      replyDateTime: '2024-04-14 13:01:21'
-    };
-    // const fakeReplys2 = {
-    //   rid: 200002,
-    //   uid: 200001,
-    //   username: 'name',
-    //   userPhoto: '',
-    //   replyDescription: '这是一则内容\n能够换行\n能给个看着',
-    //   replyDateTime: '2024-04-14 13:01:21'
-    // };
-
-    var replysArr = new Array(20);
-    replysArr.fill(fakeReplys1);
-    // replysArr.fill(fakeReplys2, 1, 2);
-    //********************************************************
     return {
 
       //展开评论指示
@@ -251,9 +246,20 @@ export default {
       //用户模型
       user: {},
       //回复数组
-      replys: replysArr,
+      replys: [],
       //回复的回复数组
-      toReplys: []
+      toReplys: [],
+
+      //回复模型
+      reply: {
+        uid: '',
+        pid: '',
+        replyDescription: '',
+        toRid: '',
+      },
+      replyDescription: ''
+      //回复内容
+
     };
   },
   methods: {
@@ -431,6 +437,67 @@ export default {
               this.$router.go(0);
             }
           });
+    },
+
+    //跳转到贴吧
+    showSection() {
+      //设置axios跨域访问时携带凭证
+      axios.defaults.withCredentials = true;
+      axios.get("http://10.62.192.125/sections/" + this.sectionData.sid)
+          .then((res) => {
+            if (res.data.code == 30001) {
+              //var href = res.data.data;
+              this.$router.push('/section');
+            } else {
+              this.$message({
+                showClose: true,
+                message: res.data.msg,
+                type: 'error'
+              });
+            }
+          });
+      //console.log(sid);
+    },
+
+    //回复
+    postReply(toRid) {
+      //数据预处理
+      this.reply.uid = this.user.uid;
+      this.reply.toRid = toRid;
+      this.reply.pid = this.postUserVo.pid;
+      this.reply.replyDescription = this.replyDescription;
+      //console.log(this.reply);
+      //设置axios跨域访问时携带凭证
+      axios.defaults.withCredentials = true;
+      //上传回复
+      axios.post("http://10.62.192.125/replys", this.reply)
+          .then(res => {
+            if (res.data.code == 30001) {
+              //回复成功
+              this.$message({
+                showClose: true,
+                message: res.data.msg,
+                type: 'success'
+              });
+              //刷新回复
+              this.getReplys();
+            } else {
+              //回复失败
+              this.$message({
+                showClose: true,
+                message: res.data.msg,
+                type: 'error'
+              });
+            }
+            //清空数据
+            this.reply = {
+              uid: '',
+              pid: '',
+              replyDescription: '',
+              toRid: '',
+            }
+            this.replyDescription = '';
+          });
     }
   },
   mounted() {
@@ -499,5 +566,9 @@ export default {
 
 .float-right {
   float: right;
+}
+
+.float-left {
+  float: left;
 }
 </style>
