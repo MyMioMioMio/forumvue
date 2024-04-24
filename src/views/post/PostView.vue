@@ -26,9 +26,9 @@
         <el-menu-item style="float: right">
           <span>{{ user.username }}  </span>
           <el-dropdown @command="handleCommand">
-            <el-avatar :size="50" :src="user.userPhoto" :fit="fit"></el-avatar>
+            <el-avatar :size="50" :src="userPhotoSrc" :fit="fit"></el-avatar>
             <el-dropdown-menu slot="dropdown">
-              <el-dropdown-item v-if="loginFlag == true">个人页面</el-dropdown-item>
+              <el-dropdown-item v-if="loginFlag == true" command="/personal">个人页面</el-dropdown-item>
               <!--              <el-dropdown-item>登录</el-dropdown-item>-->
               <el-dropdown-item v-if="loginFlag == true" command="quitLogin">登出</el-dropdown-item>
               <el-dropdown-item v-if="loginFlag == false" command="/login">登录</el-dropdown-item>
@@ -108,7 +108,7 @@
                     <el-collapse v-model="activeNames">
                       <el-collapse-item @click.native="getToReply(scope.row.rid)" :name="scope.row.rid">
                         <template slot="title">
-                          查看回复
+                          <i class="el-icon-s-comment"></i>查看回复
                         </template>
                         <!--回复的回复-->
                         <template>
@@ -198,6 +198,11 @@ import axios from "axios";
 export default {
   data() {
     return {
+      //服务器地址
+      ip: 'http://10.62.192.125',
+
+      //用户头像地址
+      userPhotoSrc: null,
 
       //展开评论指示
       activeNames: 0,
@@ -397,7 +402,7 @@ export default {
     handleCommand(command) {
       if (command == "quitLogin") {
         this.quitLogin();
-      } else {
+      } else if (command != this.$route.path){
         this.$router.push(command);
       }
 
@@ -408,16 +413,23 @@ export default {
       //设置axios跨域访问时携带凭证
       axios.defaults.withCredentials = true;
       //获取用户信息
-      axios.get("http://10.62.192.125/users")
+      axios.get(this.ip + "/users")
           .then(res => {
             if (res.data.code == 20001) {
               //获取成功
               this.user = res.data.data;
               this.loginFlag = true;
+              //获得头像地址
+              this.userPhotoSrc = this.returnUserPhotoSrc(this.user.uid);
             } else {
               this.loginFlag = false;
             }
           });
+    },
+
+    //返回用户头像路径
+    returnUserPhotoSrc(uid) {
+      return this.ip + "/users/download/" + uid;
     },
 
     //退出登录
