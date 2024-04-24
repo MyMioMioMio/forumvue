@@ -202,7 +202,7 @@ export default {
       //设置axios跨域访问时携带凭证
       axios.defaults.withCredentials = true;
       //上传pid和sid保存到服务器session
-      axios.get("http://10.62.192.125/posts/" + row.pid + '/' + row.sid)
+      axios.get( this.ip + "/posts/" + row.pid + '/' + row.sid)
           .then(res => {
             if (res.data.code == 30001) {
               //成功则跳转到post页面
@@ -222,7 +222,7 @@ export default {
     showSection(sid) {
       //设置axios跨域访问时携带凭证
       axios.defaults.withCredentials = true;
-      axios.get("http://10.62.192.125/sections/" + sid)
+      axios.get(this.ip + "/sections/" + sid)
           .then((res) => {
             if (res.data.code == 30001) {
               //var href = res.data.data;
@@ -277,7 +277,7 @@ export default {
       //设置axios跨域访问时携带凭证
       axios.defaults.withCredentials = true;
       //退出登录
-      axios.get("http://10.62.192.125/users/quitlogin")
+      axios.get(this.ip + "/users/quitlogin")
           .then(res => {
             if (res.data.code == 60001) {
               //退出成功

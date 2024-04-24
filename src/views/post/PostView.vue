@@ -105,15 +105,16 @@
                     <span class="text-common">{{ scope.row.replyDescription }}</span><br>
                     <i class="el-icon-time">{{ scope.row.replyDateTime }}</i>
                     <span class="float-right">点赞预留位</span>
-                    <el-collapse v-model="activeNames">
-                      <el-collapse-item @click.native="getToReply(scope.row.rid)" :name="scope.row.rid">
+                    <!--重写整个回复的回复-->
+                    <el-collapse v-model="collapse">
+                      <el-collapse-item @click.native="handleCollapse(scope.row)" :name="scope.row.rid">
                         <template slot="title">
                           <i class="el-icon-s-comment"></i>查看回复
                         </template>
                         <!--回复的回复-->
                         <template>
                           <el-table
-                              :data="toReplys"
+                              :data="scope.row.toReplys"
                               style="width: 100%"
                               :show-header="false"
                           >
@@ -137,13 +138,13 @@
                             </el-table-column>
                           </el-table>
                           <el-pagination
-                              @size-change="handleSizeChange2(scope.row.rid, $event)"
-                              @current-change="handleCurrentChange2(scope.row.rid, $event)"
+                              @size-change="handleSizeChange2(scope.row, $event)"
+                              @current-change="handleCurrentChange2(scope.row, $event)"
                               :current-page="1"
                               :page-sizes="[5, 10, 20]"
                               :page-size="5"
                               layout="total, sizes, prev, pager, next, jumper"
-                              :total="totalPage2"
+                              :total="scope.row.totalPage"
                               background
                           >
                           </el-pagination>
@@ -205,7 +206,7 @@ export default {
       userPhotoSrc: null,
 
       //展开评论指示
-      activeNames: 0,
+      collapse: [],
 
       //图片样式为填充
       fit: "cover",
@@ -221,8 +222,6 @@ export default {
 
       //回复的回复的当前页码
       currentPage2: 1,
-      //回复的回复的总页数
-      totalPage2: 400,
       //回复的回复的页内条数
       pageSize2: 5,
 
@@ -272,7 +271,7 @@ export default {
     getSection() {
       //设置axios跨域访问时携带凭证
       axios.defaults.withCredentials = true;
-      axios.get("http://10.62.192.125/sections")
+      axios.get(this.ip + "/sections")
           .then((res) => {
             //console.log(res.data)
             if (res.data.code == 20001) {
@@ -296,7 +295,7 @@ export default {
     getPost() {
       //设置axios跨域访问时携带凭证
       axios.defaults.withCredentials = true;
-      axios.get("http://10.62.192.125/posts")
+      axios.get(this.ip + "/posts")
           .then((res) => {
             //console.log(res.data)
             if (res.data.code == 20001) {
@@ -319,7 +318,7 @@ export default {
     //获取回复信息
     getReplys() {
       var params = this.currentPage + "/" + this.pageSize + "/" + this.postUserVo.pid;
-      axios.get("http://10.62.192.125/replys/" + params)
+      axios.get(this.ip + "/replys/" + params)
           .then(res => {
             if (res.data.code == 20001) {
               //获取成功
@@ -338,18 +337,35 @@ export default {
     },
 
     //获得回复的回复
-    getToReply(rid) {
-      var params = this.currentPage2 + "/" + this.pageSize2 + "/" + this.postUserVo.pid + '/' + rid;
-      axios.get("http://10.62.192.125/replys/" + params)
+    getToReply(row, currentPage, pageSize) {
+      //保存当前页数
+      row.currentPage = currentPage;
+      //保存当前页内条数
+      row.pageSize = pageSize;
+      var params = currentPage + "/" + pageSize + "/" + this.postUserVo.pid + '/' + row.rid;
+      axios.get(this.ip + "/replys/" + params)
           .then(res => {
             if (res.data.code == 20001) {
               //获取成功
-              this.totalPage2 = res.data.data.totalPage;
-              this.toReplys = res.data.data.replysData;
+              row.toReplys = res.data.data.replysData;
+              row.totalPage = res.data.data.totalPage;
+              console.log(row.toReplys);
             } else {
-              this.toReplys = [];
+              row.toReplys = [];
+              row.totalPage = 0;
             }
           });
+    },
+
+    //处理展开评论
+    handleCollapse(row) {
+      // 判断当前 el-collapse 是否已经展开过
+      if (!this.collapse.includes(row.rid)) {
+        // 如果没有展开过，则执行相关操作
+        this.getToReply(row, 1, 5);
+        // 将当前 el-collapse 标记为已经展开过
+        this.collapse.push(row.rid);
+      }
     },
 
     //顶部导航栏
@@ -372,20 +388,20 @@ export default {
     },
 
     //回复的回复页内条数变化
-    handleSizeChange2(rid, val) {
+    handleSizeChange2(row, val) {
       //console.log(`每页 ${val} 条`);
-      this.pageSize2 = val;
+      row.pageSize = val;
       // console.log(rid);
       // console.log(this.pageSize2);
-      this.getToReply(rid);
+      this.getToReply(row, row.currentPage, row.pageSize);
     },
     //回复的回复当前页变化
-    handleCurrentChange2(rid, val) {
+    handleCurrentChange2(row, val) {
       //console.log(`当前页: ${val}`);
-      this.currentPage2 = val;
+      row.currentPage = val;
       // console.log(rid);
       // console.log(this.currentPage2);
-      this.getToReply(rid);
+      this.getToReply(row, row.currentPage, row.pageSize);
     },
 
     //返回上一页
@@ -455,7 +471,7 @@ export default {
     showSection() {
       //设置axios跨域访问时携带凭证
       axios.defaults.withCredentials = true;
-      axios.get("http://10.62.192.125/sections/" + this.sectionData.sid)
+      axios.get(this.ip + "/sections/" + this.sectionData.sid)
           .then((res) => {
             if (res.data.code == 30001) {
               //var href = res.data.data;
@@ -482,7 +498,7 @@ export default {
       //设置axios跨域访问时携带凭证
       axios.defaults.withCredentials = true;
       //上传回复
-      axios.post("http://10.62.192.125/replys", this.reply)
+      axios.post(this.ip + "/replys", this.reply)
           .then(res => {
             if (res.data.code == 30001) {
               //回复成功
