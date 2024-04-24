@@ -92,7 +92,7 @@
               <template v-slot="scope">
                 <el-row>
                   <el-col :span="2">
-                    <el-avatar :size="50" :src="scope.row.userPhoto" :fit="fit"></el-avatar>
+                    <el-avatar :size="50" :src="returnUserPhotoSrc(scope.row.uid)" :fit="fit"></el-avatar>
                     <br>
                     <span style="font-size: small; text-align: center">{{ scope.row.username }}</span>
                   </el-col>

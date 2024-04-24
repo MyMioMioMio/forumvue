@@ -64,7 +64,7 @@
         <!--楼主信息-->
         <el-row>
           <el-col :span="2">
-            <el-avatar :size="60" :src="postUserVo.userPhoto" :fit="fit"></el-avatar>
+            <el-avatar :size="60" :src="returnUserPhotoSrc(this.user.uid)" :fit="fit"></el-avatar>
             <br>
             <span style="font-size: small; text-align: left">{{ postUserVo.username }}</span><br>
             <el-tag>楼主</el-tag>
@@ -95,7 +95,7 @@
               <template v-slot="scope">
                 <el-row>
                   <el-col :span="2">
-                    <el-avatar :size="60" :src="scope.row.userPhoto" :fit="fit"></el-avatar>
+                    <el-avatar :size="60" :src="returnUserPhotoSrc(scope.row.uid)" :fit="fit"></el-avatar>
                     <br>
                     <span style="font-size: small">{{ scope.row.username }}</span><br>
                     <el-tag v-if="scope.row.uid == postUserVo.uid">楼主</el-tag>
@@ -104,60 +104,57 @@
                   <el-col :span="22" class="text-align-left">
                     <span class="text-common">{{ scope.row.replyDescription }}</span><br>
                     <i class="el-icon-time">{{ scope.row.replyDateTime }}</i>
-                    <span class="float-right">点赞预留位</span>
+                    <span class="float-right">点赞预留位</span><br>
                     <!--重写整个回复的回复-->
-                    <el-collapse v-model="collapse">
-                      <el-collapse-item @click.native="handleCollapse(scope.row)" :name="scope.row.rid">
-                        <template slot="title">
-                          <i class="el-icon-s-comment"></i>查看回复
-                        </template>
-                        <!--回复的回复-->
-                        <template>
-                          <el-table
-                              :data="scope.row.toReplys"
-                              style="width: 100%"
-                              :show-header="false"
-                          >
-                            <el-table-column>
-                              <template v-slot="scope">
-                                <el-row>
-                                  <el-col :span="2">
-                                    <el-avatar :size="60" :src="scope.row.userPhoto" :fit="fit"></el-avatar>
-                                    <br>
-                                    <span style="font-size: small">{{ scope.row.username }}</span><br>
-                                    <el-tag v-if="scope.row.uid == postUserVo.uid">楼主</el-tag>
-                                  </el-col>
+                    <el-link @click="showToReply(scope.row)"><i class="el-icon-s-comment">查看回复</i></el-link><br>
+                    <div v-if="scope.row.toReplyVisible">
+                      <!--回复的回复-->
+                      <template>
+                        <el-table
+                            :data="scope.row.toReplys"
+                            style="width: 100%"
+                            :show-header="false"
+                        >
+                          <el-table-column>
+                            <template v-slot="scope">
+                              <el-row>
+                                <el-col :span="2">
+                                  <el-avatar :size="60" :src="scope.row.userPhoto" :fit="fit"></el-avatar>
+                                  <br>
+                                  <span style="font-size: small">{{ scope.row.username }}</span><br>
+                                  <el-tag v-if="scope.row.uid == postUserVo.uid">楼主</el-tag>
+                                </el-col>
 
-                                  <el-col :span="22" class="text-align-left">
-                                    <span class="text-common">{{ scope.row.replyDescription }}</span><br>
-                                    <i class="el-icon-time">{{ scope.row.replyDateTime }}</i>
-                                    <span class="float-right">点赞预留位</span>
-                                  </el-col>
-                                </el-row>
-                              </template>
-                            </el-table-column>
-                          </el-table>
-                          <el-pagination
-                              @size-change="handleSizeChange2(scope.row, $event)"
-                              @current-change="handleCurrentChange2(scope.row, $event)"
-                              :current-page="1"
-                              :page-sizes="[5, 10, 20]"
-                              :page-size="5"
-                              layout="total, sizes, prev, pager, next, jumper"
-                              :total="scope.row.totalPage"
-                              background
-                          >
-                          </el-pagination>
-                          <!--回复层主-->
-                          <el-row>
-                            <el-button type="primary" size="small" @click="postReply(scope.row.rid)">回复</el-button>
-                          </el-row>
-                          <el-row>
-                            <el-input type="textarea" v-model="replyDescription" :rows="3" maxlength="100" show-word-limit></el-input>
-                          </el-row>
-                        </template>
-                      </el-collapse-item>
-                    </el-collapse>
+                                <el-col :span="22" class="text-align-left">
+                                  <span class="text-common">{{ scope.row.replyDescription }}</span><br>
+                                  <i class="el-icon-time">{{ scope.row.replyDateTime }}</i>
+                                  <span class="float-right">点赞预留位</span>
+                                </el-col>
+                              </el-row>
+                            </template>
+                          </el-table-column>
+                        </el-table>
+                        <el-pagination
+                            @size-change="handleSizeChange2(scope.row, $event)"
+                            @current-change="handleCurrentChange2(scope.row, $event)"
+                            :current-page="1"
+                            :page-sizes="[5, 10, 20]"
+                            :page-size="5"
+                            layout="total, sizes, prev, pager, next, jumper"
+                            :total="scope.row.totalPage"
+                            background
+                        >
+                        </el-pagination>
+                        <!--回复层主-->
+                        <el-row>
+                          <el-button type="primary" size="small" @click="postReply(scope.row.rid)">回复</el-button>
+                        </el-row>
+                        <el-row>
+                          <el-input type="textarea" v-model="replyDescription" :rows="3" maxlength="100"
+                                    show-word-limit></el-input>
+                        </el-row>
+                      </template>
+                    </div>
                   </el-col>
                 </el-row>
               </template>
@@ -347,9 +344,10 @@ export default {
           .then(res => {
             if (res.data.code == 20001) {
               //获取成功
-              row.toReplys = res.data.data.replysData;
+              //使用这种方式刷新数据，才能使vue对该数据的变化响应
+              this.$set(row, 'toReplys', res.data.data.replysData);
               row.totalPage = res.data.data.totalPage;
-              console.log(row.toReplys);
+              //console.log(row.toReplys);
             } else {
               row.toReplys = [];
               row.totalPage = 0;
@@ -358,14 +356,12 @@ export default {
     },
 
     //处理展开评论
-    handleCollapse(row) {
-      // 判断当前 el-collapse 是否已经展开过
-      if (!this.collapse.includes(row.rid)) {
-        // 如果没有展开过，则执行相关操作
-        this.getToReply(row, 1, 5);
-        // 将当前 el-collapse 标记为已经展开过
-        this.collapse.push(row.rid);
-      }
+    showToReply(row) {
+      row.toReplyVisible = !row.toReplyVisible;
+      //初始化
+      row.currentPage = 1;
+      row.pageSize = 5;
+      this.getToReply(row, row.currentPage, row.pageSize);
     },
 
     //顶部导航栏
@@ -418,7 +414,7 @@ export default {
     handleCommand(command) {
       if (command == "quitLogin") {
         this.quitLogin();
-      } else if (command != this.$route.path){
+      } else if (command != this.$route.path) {
         this.$router.push(command);
       }
 
