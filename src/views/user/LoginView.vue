@@ -15,7 +15,9 @@
                     show-password></el-input>
         </el-form-item>
         <el-form-item prop="remember">
-          <el-checkbox v-model="form.remember" style="float: left">记住密码</el-checkbox>
+          <el-tooltip class="item" effect="dark" content="不建议勾选!" placement="left">
+            <el-checkbox v-model="form.remember" style="float: left">记住密码</el-checkbox>
+          </el-tooltip>
           <router-link to="/register" style="float: right">没有账号？立即注册</router-link>
         </el-form-item>
         <el-form-item>
@@ -122,6 +124,7 @@ export default {
     checkCookie() {
       this.form.username = this.getCookie("TieUsername");
       this.form.password = this.getCookie("TiePassword");
+      //console.log(this.form);
     },
 
     //查询cookie指定字段名

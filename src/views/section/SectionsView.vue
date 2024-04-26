@@ -40,11 +40,11 @@
     </el-header>
     <!--体部分-->
     <el-main>
-      <!--所有贴吧的帖子展示-->
+      <!--所有贴吧的展示-->
       <div>
         <template>
           <el-table
-              :data="posts"
+              :data="sectionData"
               style="width: 100%"
               :show-header="false"
           >
@@ -59,18 +59,15 @@
                 <el-row>
                   <!--贴吧头像-->
                   <el-col :span="2">
-                    <el-avatar :size="50" :src="scope.row.sectionPhoto" :fit="fit"></el-avatar><br>
-                    <el-link @click="showSection(scope.row.sid)">
-                      <span style="font-size: small; text-align: center">{{scope.row.sectionName}}</span>
-                    </el-link>
+                    <el-avatar :size="60" :src="scope.row.sectionPhoto" :fit="fit" shape="square"></el-avatar>
                   </el-col>
                   <!--帖子详情-->
                   <el-col :span="22">
-                    <el-link @click="showPost(scope.row)">
-                      <h2>{{scope.row.postsTitle}}</h2>
+                    <el-link @click="showSection(scope.row.sid)">
+                      <h2>{{scope.row.sectionName}}</h2>
                     </el-link>
-                    <p style="font-size: large">{{scope.row.postsDescription.slice(0, 50) + '...'}}</p>
-                    <i class="el-icon-time">{{scope.row.postsDateTime}}</i>
+                    <p style="font-size: large">{{scope.row.sectionDescription}}</p>
+                    <i class="el-icon-time">{{scope.row.sectionDatetime}}</i>
                   </el-col>
                 </el-row>
                 <!--                {{scope.row.postsTitle}}-->
@@ -93,6 +90,43 @@
         >
         </el-pagination>
       </div>
+      <!--新建贴吧按钮-->
+      <el-tooltip class="item" effect="dark" content="新建贴吧" placement="left">
+        <el-button
+            type="primary"
+            icon="el-icon-plus"
+            style="position: fixed; bottom: 100px; right: 100px"
+            @click="postDialogVisible=true"
+            circle
+        >
+        </el-button>
+      </el-tooltip>
+
+      <!--新建贴吧页面-->
+      <el-dialog title="新建贴吧" :visible.sync="postDialogVisible" width="40%">
+        <el-form :model="section" ref="section" :rules="sectionRules">
+          <el-form-item label="贴吧名称" prop="sectionName">
+            <el-input v-model="section.sectionName"
+                      type="text"
+                      maxlength="19"
+                      show-word-limit
+            ></el-input>
+          </el-form-item>
+          <el-form-item label="贴吧简介">
+            <el-input type="textarea"
+                      v-model="section.sectionDescription"
+                      maxlength="30"
+                      :rows="2"
+                      show-word-limit
+            ></el-input>
+          </el-form-item>
+          <el-form-item>
+            <el-button type="primary" @click="submitSectionCheck('section')">提交</el-button>
+            <el-button @click="postDialogVisible = false">取消</el-button>
+          </el-form-item>
+        </el-form>
+      </el-dialog>
+
     </el-main>
     <!--制作信息-->
     <el-footer>
@@ -105,18 +139,27 @@
 import axios from "axios";
 export default {
   data() {
-    //帖子临时数据
-    // const fakePost = {
-    //   pid: 200001,
-    //   sectionName: 'Test吧',
-    //   sectionPhoto: '',
-    //   postsTitle: '第二个帖子标题',
-    //   postsDescription: '第二个帖子内容：《叶圣陶散文》为“名家经典珍藏”丛书之一，收录了叶圣陶先生的散文精品数十篇。这些作品内容丰富，题材各异，构思精巧，文笔精巧、语言幽默、内蕴深厚、风格恬淡，充分显示了叶圣陶先生的文学功底及丰富的人生阅历，从一个侧面反映了作者的思想感情及创作风格，非常值得一读。叶圣陶是20世纪中国一位杰出的作家、教育家和出版家，又是中国现代儿童文学创作的先行者。作为散文家，他早期和周作人、朱自清共同成为文学研究会散文创作的中坚，后来又成为开明派散文的代表，其散文被一九三五年出版的《中国新文学大系》选录的篇数仅次于周作人、鲁迅和朱自清。',
-    //   sid: 200002,
-    // }
+
+    //贴吧名称校验
+    const validateSectionName = (rule, value, callback) => {
+      if (!value) {
+        callback(new Error('贴吧名称不能为空！'));
+      } else {
+        callback();
+      }
+    }
+
     return {
       //服务器地址
       ip: 'http://10.62.192.125',
+
+      //新建贴吧页面标志
+      postDialogVisible: false,
+
+      //贴吧表单校验规则
+      sectionRules: {
+        sectionName: [{required: true, trigger: 'blur', validator: validateSectionName}]
+      },
 
       //用户头像地址
       userPhotoSrc: null,
@@ -124,11 +167,11 @@ export default {
       //图片样式为填充
       fit: "cover",
 
-      activeIndex: "/",
+      activeIndex: "/sections",
       //sectionNav: 1,
       //当前页码
       currentPage: 1,
-      //总条数
+      //总页数
       totalPage: 400,
       //页内条数
       pageSize: 5,
@@ -138,38 +181,28 @@ export default {
       loginFlag: false,
       //查询信息
       searchString: "",
-      // //吧信息
-      // sectionData: {
-      //   sid:1,
-      //   sectionName:"Test吧",
-      //   sectionDescription:"Test吧hahahahaha",
-      //   sectionPhoto:"src/assets/logo.png",
-      //   sectionDatetime:"2024-04-05 22:07:18"
-      // },
-
-      //吧 + 帖子信息
-      post: {
-        pid: '',
-        sectionName: '',
-        sectionPhoto: '',
-        postsTitle: '',
-        postsDescription: '',
+      //新建吧信息
+      section: {
         sid: '',
-        postsDateTime: '',
+        sectionName: '',
+        sectionDescription: '',
+        sectionPhoto: null,
+        sectionDatetime: ''
       },
-      //帖子数组数据
-      posts: []
+
+      //所有贴吧数组数据
+      sectionData: []
     };
   },
   methods: {
-    //获得数据
+    //获得所有贴吧数据
     getAll() {
       var params = this.currentPage + "/" + this.pageSize;
       //console.log(params);
-      axios.get( this.ip + "/sections/" + params)
+      axios.get( this.ip + "/sections/all/" + params)
           .then((res) => {
             if (res.data.code == 20001) {
-              this.posts = res.data.data.pageData;
+              this.sectionData = res.data.data.pageData;
               this.totalPage = res.data.data.totalPage;
             } else {
               this.$message({
@@ -288,6 +321,57 @@ export default {
                 type: 'success'
               });
               this.$router.go(0);
+            }
+          });
+    },
+
+    //校验贴吧
+    submitSectionCheck(section) {
+      this.$refs[section].validate((valid) => {
+        if (valid) {
+          this.submitSection();
+        } else {
+          //console.log('error submit!!');
+          return false;
+        }
+      });
+    },
+
+    //提交贴吧
+    submitSection() {
+      //数据预处理
+      this.section.sectionName += "吧";
+      //console.log(this.section);
+      //设置axios跨域访问时携带凭证
+      axios.defaults.withCredentials = true;
+      //提交贴子
+      axios.post(this.ip + "/sections", this.section)
+          .then(res => {
+            if (res.data.code == 30001) {
+              //提交成功
+              this.$message({
+                showClose: true,
+                message: res.data.msg,
+                type: 'success'
+              });
+              //关闭对话框
+              this.postDialogVisible = false;
+              //清空section
+              this.section ={
+                sid: '',
+                sectionName: '',
+                sectionDescription: '',
+                sectionPhoto: null,
+                sectionDatetime: ''
+              }
+              //刷新页面
+              this.getAll();
+            } else {
+              this.$message({
+                showClose: true,
+                message: res.data.msg,
+                type: 'error'
+              });
             }
           });
     }

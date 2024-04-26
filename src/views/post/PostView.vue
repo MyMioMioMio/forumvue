@@ -64,7 +64,7 @@
         <!--楼主信息-->
         <el-row>
           <el-col :span="2">
-            <el-avatar :size="60" :src="returnUserPhotoSrc(this.user.uid)" :fit="fit"></el-avatar>
+            <el-avatar :size="60" :src="postUserVo.userPhotoSrc" :fit="fit"></el-avatar>
             <br>
             <span style="font-size: small; text-align: left">{{ postUserVo.username }}</span><br>
             <el-tag>楼主</el-tag>
@@ -91,6 +91,13 @@
               style="width: 100%"
               :show-header="false"
           >
+            <el-table-column width="70px">
+              <template v-slot="scope">
+                <!-- scope.$index 表示当前行的索引 -->
+                <el-tag>{{ returnCountofAllReply(scope.$index) }}楼</el-tag>
+              </template>
+            </el-table-column>
+
             <el-table-column>
               <template v-slot="scope">
                 <el-row>
@@ -105,8 +112,9 @@
                     <span class="text-common">{{ scope.row.replyDescription }}</span><br>
                     <i class="el-icon-time">{{ scope.row.replyDateTime }}</i>
                     <span class="float-right">点赞预留位</span><br>
-                    <!--重写整个回复的回复-->
-                    <el-link @click="showToReply(scope.row)"><i class="el-icon-s-comment">查看回复</i></el-link><br>
+                    <!--重写整个回复的回复, 完成-->
+                    <el-link @click="showToReply(scope.row)"><i class="el-icon-s-comment">查看回复</i></el-link>
+                    <br>
                     <div v-if="scope.row.toReplyVisible">
                       <!--回复的回复-->
                       <template>
@@ -119,7 +127,7 @@
                             <template v-slot="scope">
                               <el-row>
                                 <el-col :span="2">
-                                  <el-avatar :size="60" :src="scope.row.userPhoto" :fit="fit"></el-avatar>
+                                  <el-avatar :size="60" :src="returnUserPhotoSrc(scope.row.uid)" :fit="fit"></el-avatar>
                                   <br>
                                   <span style="font-size: small">{{ scope.row.username }}</span><br>
                                   <el-tag v-if="scope.row.uid == postUserVo.uid">楼主</el-tag>
@@ -212,7 +220,7 @@ export default {
 
       //当前页码
       currentPage: 1,
-      //总页数
+      //总条数
       totalPage: 400,
       //页内条数
       pageSize: 5,
@@ -227,7 +235,7 @@ export default {
         pid: "",
         uid: "",
         username: "",
-        userPhoto: "",
+        userPhotoSrc: "",
         postsTitle: "",
         postsDescription: "",
         postsDateTime: "",
@@ -298,6 +306,7 @@ export default {
             if (res.data.code == 20001) {
               //获取成功
               this.postUserVo = res.data.data;
+              this.postUserVo.userPhotoSrc = this.returnUserPhotoSrc(this.postUserVo.uid);
               //获取所有回复信息
               this.getReplys();
             } else {
@@ -441,6 +450,7 @@ export default {
 
     //返回用户头像路径
     returnUserPhotoSrc(uid) {
+      //console.log("src==>" + this.ip + "/users/download/" + uid);
       return this.ip + "/users/download/" + uid;
     },
 
@@ -449,7 +459,7 @@ export default {
       //设置axios跨域访问时携带凭证
       axios.defaults.withCredentials = true;
       //退出登录
-      axios.get("http://10.62.192.125/users/quitlogin")
+      axios.get(this.ip + "/users/quitlogin")
           .then(res => {
             if (res.data.code == 60001) {
               //退出成功
@@ -522,6 +532,11 @@ export default {
             }
             this.replyDescription = '';
           });
+    },
+
+    //返回楼数
+    returnCountofAllReply(index) {
+      return this.totalPage - (this.currentPage - 1) * this.pageSize - index;
     }
   },
   mounted() {

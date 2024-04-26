@@ -23,7 +23,7 @@
 
         <!--用户行为-->
         <el-menu-item style="float: right">
-          <span>{{user.username}}  </span>
+          <span>{{ user.username }}  </span>
           <el-dropdown @command="handleCommand">
             <el-avatar :size="50" :src="userPhotoSrc" :fit="fit"></el-avatar>
             <el-dropdown-menu slot="dropdown">
@@ -56,7 +56,8 @@
             <div>
               <el-divider content-position="left">介绍</el-divider>
             </div>
-            <span>{{ sectionData.sectionDescription }}</span>
+            <span>{{ sectionData.sectionDescription }}</span><br>
+            <i class="el-icon-time">创建时间:{{sectionData.sectionDatetime}}</i>
           </el-col>
         </el-row>
         <el-menu
@@ -70,6 +71,10 @@
           <el-menu-item index="1">看帖</el-menu-item>
           <el-menu-item style="float: right">
             <el-button type="primary" plain @click="postDialogVisible = true">发帖</el-button>
+          </el-menu-item>
+
+          <el-menu-item style="float: right">
+            <el-button type="primary" plain @click="updateDialogVisible = true; beforeHandle()">修改吧信息</el-button>
           </el-menu-item>
         </el-menu>
         <div class="line"></div>
@@ -150,6 +155,32 @@
         </el-form>
       </el-dialog>
 
+      <!--修改贴吧页面-->
+      <el-dialog title="新建贴吧" :visible.sync="updateDialogVisible" width="40%">
+        <el-form :model="section" ref="section" :rules="sectionRules">
+          <el-form-item label="贴吧名称" prop="sectionName">
+            <el-input v-model="section.sectionName"
+                      type="text"
+                      maxlength="19"
+                      show-word-limit
+            ></el-input>
+          </el-form-item>
+          <el-form-item label="贴吧简介">
+            <el-input type="textarea"
+                      v-model="section.sectionDescription"
+                      maxlength="30"
+                      :rows="2"
+                      show-word-limit
+            ></el-input>
+          </el-form-item>
+          <el-form-item>
+            <el-button type="primary" @click="submitSectionCheck('section')">提交</el-button>
+            <el-button @click="updateDialogVisible = false">取消</el-button>
+          </el-form-item>
+        </el-form>
+      </el-dialog>
+
+
     </el-main>
     <!--制作信息-->
     <el-footer>
@@ -172,9 +203,22 @@ export default {
         callback();
       }
     }
+
+    //贴吧名称校验
+    const validateSectionName = (rule, value, callback) => {
+      if (!value) {
+        callback(new Error('贴吧名称不能为空！'));
+      } else {
+        callback();
+      }
+    }
+
     return {
       //服务器地址
       ip: 'http://10.62.192.125',
+
+      //显示吧信息修改页面
+      updateDialogVisible: false,
 
       //用户头像地址
       userPhotoSrc: null,
@@ -189,7 +233,7 @@ export default {
 
       //当前页码
       currentPage: 1,
-      //总页数
+      //总条数
       totalPage: 400,
       //页内条数
       pageSize: 5,
@@ -206,6 +250,19 @@ export default {
         sectionPhoto: "",
         sectionDatetime: ""
       },
+
+      //修改吧信息
+      section: {
+        sid: '',
+        sectionName: '',
+        sectionDescription: '',
+      },
+
+      //修改贴吧表单校验规则
+      sectionRules: {
+        sectionName: [{required: true, trigger: 'blur', validator: validateSectionName}]
+      },
+
       //帖子信息
       post: {
         pid: '',
@@ -231,7 +288,7 @@ export default {
     getSection() {
       //设置axios跨域访问时携带凭证
       axios.defaults.withCredentials = true;
-      axios.get("http://10.62.192.125/sections")
+      axios.get(this.ip + "/sections")
           .then((res) => {
             console.log(res.data)
             if (res.data.code == 20001) {
@@ -251,10 +308,17 @@ export default {
           });
     },
 
+    //修改贴吧的预处理
+    beforeHandle() {
+      this.section.sid = this.sectionData.sid + '';
+      this.section.sectionName = this.sectionData.sectionName.slice(0, -1);
+      this.section.sectionDescription = this.sectionData.sectionDescription + '';
+    },
+
     //获取指定贴吧的帖子信息
     getPosts() {
       var params = this.currentPage + "/" + this.pageSize + "/" + this.sectionData.sid;
-      axios.get("http://10.62.192.125/posts/" + params)
+      axios.get(this.ip + "/posts/" + params)
           .then((res) => {
             if (res.data.code == 20001) {
               this.posts = res.data.data.pageData;
@@ -297,7 +361,7 @@ export default {
       //设置axios跨域访问时携带凭证
       axios.defaults.withCredentials = true;
       //上传pid和sid保存到服务器session
-      axios.get("http://10.62.192.125/posts/" + row.pid + '/' + row.sid)
+      axios.get(this.ip + "/posts/" + row.pid + '/' + row.sid)
           .then(res => {
             if (res.data.code == 30001) {
               //成功则跳转到post页面
@@ -322,7 +386,7 @@ export default {
     handleCommand(command) {
       if (command == "quitLogin") {
         this.quitLogin();
-      } else if (command != this.$route.path){
+      } else if (command != this.$route.path) {
         this.$router.push(command);
       }
 
@@ -357,7 +421,7 @@ export default {
       //设置axios跨域访问时携带凭证
       axios.defaults.withCredentials = true;
       //退出登录
-      axios.get("http://10.62.192.125/users/quitlogin")
+      axios.get(this.ip + "/users/quitlogin")
           .then(res => {
             if (res.data.code == 60001) {
               //退出成功
@@ -381,6 +445,7 @@ export default {
         }
       });
     },
+
     //提交贴子
     submitPost() {
       //数据预处理
@@ -389,7 +454,7 @@ export default {
       //设置axios跨域访问时携带凭证
       axios.defaults.withCredentials = true;
       //提交贴子
-      axios.post("http://10.62.192.125/posts", this.post)
+      axios.post(this.ip + "/posts", this.post)
           .then(res => {
             if (res.data.code == 30001) {
               //提交成功
@@ -422,6 +487,49 @@ export default {
             }
           });
     },
+
+    //校验贴吧
+    submitSectionCheck(section) {
+      this.$refs[section].validate((valid) => {
+        if (valid) {
+          this.submitSection();
+        } else {
+          //console.log('error submit!!');
+          return false;
+        }
+      });
+    },
+
+    //更新贴吧
+    submitSection() {
+      //数据预处理
+      this.section.sectionName += "吧";
+      //console.log(this.section);
+      //设置axios跨域访问时携带凭证
+      axios.defaults.withCredentials = true;
+      //提交贴子
+      axios.put(this.ip + "/sections", this.section)
+          .then(res => {
+            if (res.data.code == 70001) {
+              //提交成功
+              this.$message({
+                showClose: true,
+                message: res.data.msg,
+                type: 'success'
+              });
+              //关闭对话框
+              this.updateDialogVisible = false;
+              //刷新页面
+              this.getSection();
+            } else {
+              this.$message({
+                showClose: true,
+                message: res.data.msg,
+                type: 'error'
+              });
+            }
+          });
+    }
   },
   mounted() {
     this.getSection();
@@ -442,8 +550,6 @@ export default {
 }
 
 .el-row {
-  //margin-bottom: 20px;
-
   &:last-child {
     margin-bottom: 0;
   }
