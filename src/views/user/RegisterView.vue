@@ -60,6 +60,8 @@ export default {
       } else if (value.charAt(0) == ' ' || value.charAt(value.length - 1) == ' ') {
         callback(new Error('用户名前后不能有空格！'));
         // '用户名前后不能有空格！'
+      } else if (value.length > 12){
+        callback(new Error('用户名最多为12个字符！'));
       } else {
         //检查用户名是否存在
         var flag = true; //true表示用户名已存在
@@ -101,6 +103,9 @@ export default {
     }
 
     return {
+      //服务器地址
+      ip: 'http://10.62.192.125',
+
       form: {
         username: '',
         password: '',
@@ -122,6 +127,7 @@ export default {
     resetForm(form) {
       this.$refs[form].resetFields();
     },
+    //注册校验
     checkRegister(form) {
       //console.log(this.form);
       this.$refs[form].validate((valid) => {
@@ -139,7 +145,7 @@ export default {
     register() {
       //设置axios跨域访问时携带凭证
       axios.defaults.withCredentials = true;
-      axios.post("http://10.62.192.125/users/register", this.form)
+      axios.post(this.ip + "/users/register", this.form)
           .then(res => {
             if (res.data.code == 50001) {
               this.$message({

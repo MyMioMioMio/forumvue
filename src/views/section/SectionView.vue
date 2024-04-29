@@ -46,7 +46,7 @@
           <el-col :span="4">
             <el-image
                 style="width: 200px; height: 200px;box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.1)"
-                :src="sectionData.sectionPhoto"
+                :src="photoSrc"
                 :fit="fit"
             >
             </el-image>
@@ -57,7 +57,7 @@
               <el-divider content-position="left">介绍</el-divider>
             </div>
             <span>{{ sectionData.sectionDescription }}</span><br>
-            <i class="el-icon-time">创建时间:{{sectionData.sectionDatetime}}</i>
+            <i class="el-icon-time">创建时间:{{ sectionData.sectionDatetime }}</i>
           </el-col>
         </el-row>
         <el-menu
@@ -156,7 +156,25 @@
       </el-dialog>
 
       <!--修改贴吧页面-->
-      <el-dialog title="新建贴吧" :visible.sync="updateDialogVisible" width="40%">
+      <el-dialog title="修改贴吧" :visible.sync="updateDialogVisible" width="40%">
+        <!--上传头像-->
+        <el-row>
+          <div style="float: left">
+            <!--头像部分-->
+            <el-upload
+                class="avatar-uploader"
+                action
+                :http-request="upload"
+                :show-file-list="false"
+                :before-upload="beforeAvatarUpload">
+              <img v-if="recallPhotoSrc" :src="recallPhotoSrc" class="avatar">
+              <i v-else class="el-icon-plus avatar-uploader-icon"></i>
+            </el-upload>
+            <h1>设置头像</h1>
+          </div>
+        </el-row>
+
+        <!--修改贴吧内容-->
         <el-form :model="section" ref="section" :rules="sectionRules">
           <el-form-item label="贴吧名称" prop="sectionName">
             <el-input v-model="section.sectionName"
@@ -175,7 +193,7 @@
           </el-form-item>
           <el-form-item>
             <el-button type="primary" @click="submitSectionCheck('section')">提交</el-button>
-            <el-button @click="updateDialogVisible = false">取消</el-button>
+            <el-button @click="cancel()">取消</el-button>
           </el-form-item>
         </el-form>
       </el-dialog>
@@ -216,6 +234,12 @@ export default {
     return {
       //服务器地址
       ip: 'http://10.62.192.125',
+
+      //贴吧头像地址
+      photoSrc: null,
+
+      //回显贴吧头像地址
+      recallPhotoSrc: null,
 
       //显示吧信息修改页面
       updateDialogVisible: false,
@@ -284,6 +308,57 @@ export default {
     };
   },
   methods: {
+
+    //上传头像的方法
+    upload(item) {
+      //设置表单
+      let formData = new FormData();
+      formData.append("file", item.file);
+      formData.append("sid", this.sectionData.sid);
+      //设置axios跨域访问时携带凭证
+      axios.defaults.withCredentials = true;
+      //上传头像
+      axios.post(this.ip + "/sections/uploadavatar", formData)
+          .then(res => {
+            if (res.data.code == 30001) {
+              //上传成功
+              this.$message({
+                showClose: true,
+                message: res.data.msg,
+                type: 'success'
+              });
+              //设置用户头像路径
+              this.photoSrc = this.ip + "/sections/download/" + this.sectionData.sid;
+              //设置回显头像路径
+              this.recallPhotoSrc = this.ip + "/sections/download/" + this.sectionData.sid;
+            } else {
+              //上传失败
+              this.$message({
+                showClose: true,
+                message: res.data.msg,
+                type: 'error'
+              });
+            }
+          });
+    },
+
+    //上传头像前的校验
+    beforeAvatarUpload(file) {
+      //判断文件类型
+      const isTrueImg = file.type === 'image/jpeg' || file.type === 'image/png';
+      //判断文件大小
+      const isLt2M = file.size / 1024 / 1024 < 10;
+
+      if (!isTrueImg) {
+        this.$message.error('上传头像图片只能是 JPG或PNG 格式!');
+      }
+      if (!isLt2M) {
+        this.$message.error('上传头像图片大小不能超过 10MB!');
+      }
+      //this.imageUrl = URL.createObjectURL(file.raw);
+      return isTrueImg && isLt2M;
+    },
+
     //获得贴吧信息
     getSection() {
       //设置axios跨域访问时携带凭证
@@ -294,6 +369,7 @@ export default {
             if (res.data.code == 20001) {
               //获取成功
               this.sectionData = res.data.data;
+              this.photoSrc = this.returnSectionPhotoSrc(this.sectionData.sid);
               //获取所有帖子信息
               this.getPosts();
             } else {
@@ -416,6 +492,11 @@ export default {
       return this.ip + "/users/download/" + uid;
     },
 
+    //返回贴吧头像路径
+    returnSectionPhotoSrc(sid) {
+      return this.ip + "/sections/download/" + sid;
+    },
+
     //退出登录
     quitLogin() {
       //设置axios跨域访问时携带凭证
@@ -529,6 +610,12 @@ export default {
               });
             }
           });
+    },
+
+    //更新页面的取消按钮
+    cancel() {
+      this.updateDialogVisible = false;
+      this.$router.go(0);
     }
   },
   mounted() {
@@ -588,6 +675,35 @@ export default {
 .border-top {
   border-top: 1px solid #ebeef5;
 }
+
+.avatar-uploader .el-upload {
+  border: 1px dashed #d9d9d9;
+  border-radius: 6px;
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+}
+
+.avatar-uploader .el-upload:hover {
+  border-color: #409EFF;
+}
+
+.avatar-uploader-icon {
+  font-size: 28px;
+  color: #8c939d;
+  width: 178px;
+  height: 178px;
+  line-height: 178px;
+  text-align: center;
+}
+
+.avatar {
+  width: 178px;
+  height: 178px;
+  display: block;
+}
+
+
 </style>
 
 

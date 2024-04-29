@@ -59,7 +59,7 @@
                 <el-row>
                   <!--贴吧头像-->
                   <el-col :span="2">
-                    <el-avatar :size="50" :src="scope.row.sectionPhoto" :fit="fit"></el-avatar><br>
+                    <el-avatar :size="50" :src="returnSectionPhotoSrc(scope.row.sid)" :fit="fit"></el-avatar><br>
                     <el-link @click="showSection(scope.row.sid)">
                       <span style="font-size: small; text-align: center">{{scope.row.sectionName}}</span>
                     </el-link>
@@ -271,6 +271,11 @@ export default {
     //返回用户头像路径
     returnUserPhotoSrc(uid) {
       return this.ip + "/users/download/" + uid;
+    },
+
+    //返回贴吧头像路径
+    returnSectionPhotoSrc(sid) {
+      return this.ip + "/sections/download/" + sid;
     },
 
     //退出登录

@@ -60,6 +60,10 @@ export default {
       }
     }
     return {
+
+      //服务器地址
+      ip: 'http://10.62.192.125',
+
       form: {
         username: '',
         password: '',
@@ -97,7 +101,7 @@ export default {
       //设置axios跨域访问时携带凭证
       axios.defaults.withCredentials = true;
       //发送信息
-      axios.post("http://10.62.192.125/users", this.form)
+      axios.post(this.ip + "/users", this.form)
           .then(res => {
             if (res.data.code == 40001) {
               //登录成功

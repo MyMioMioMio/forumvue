@@ -47,7 +47,7 @@
           <el-col :span="2">
             <el-image
                 style="width: 50px; height: 50px;box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.1)"
-                :src="sectionData.sectionPhoto"
+                :src="returnSectionPhotoSrc(sectionData.sid)"
                 :fit="fit"
             >
             </el-image>
@@ -452,6 +452,11 @@ export default {
     returnUserPhotoSrc(uid) {
       //console.log("src==>" + this.ip + "/users/download/" + uid);
       return this.ip + "/users/download/" + uid;
+    },
+
+    //返回贴吧头像路径
+    returnSectionPhotoSrc(sid) {
+      return this.ip + "/sections/download/" + sid;
     },
 
     //退出登录
