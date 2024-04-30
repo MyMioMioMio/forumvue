@@ -25,7 +25,7 @@
         <el-menu-item style="float: right">
           <span>{{ user.username }}  </span>
           <el-dropdown @command="handleCommand">
-            <el-avatar :size="50" :src="userPhotoSrc" :fit="fit"></el-avatar>
+            <el-avatar :size="50" :src="userPhotoSrc" :key="userPhotoSrc + Math.random()" :fit="fit"></el-avatar>
             <el-dropdown-menu slot="dropdown">
               <el-dropdown-item v-if="loginFlag == true" command="/personal">个人页面</el-dropdown-item>
               <!--              <el-dropdown-item>登录</el-dropdown-item>-->
@@ -70,6 +70,7 @@
       <el-container>
         <!--体部分-->
         <el-main>
+          <!--上传头像-->
           <el-row>
             <div style="float: left">
               <!--头像部分-->
@@ -79,7 +80,7 @@
                   :http-request="upload"
                   :show-file-list="false"
                   :before-upload="beforeAvatarUpload">
-                <img v-if="photoSrc" :src="photoSrc" class="avatar">
+                <img v-if="photoSrc" :src="photoSrc" :key="photoSrc + Math.random()" class="avatar">
                 <i v-else class="el-icon-plus avatar-uploader-icon"></i>
               </el-upload>
               <h1>设置头像</h1>
@@ -249,6 +250,7 @@ export default {
               });
               //设置用户头像路径
               this.photoSrc = this.ip + "/users/download/" + this.user.uid;
+              this.userPhotoSrc = this.ip + "/users/download/" + this.user.uid;
             } else {
               //上传失败
               this.$message({

@@ -59,7 +59,7 @@
                 <el-row>
                   <!--贴吧头像-->
                   <el-col :span="2">
-                    <el-avatar :size="50" :src="returnSectionPhotoSrc(scope.row.sid)" :fit="fit"></el-avatar><br>
+                    <el-avatar :size="50" :src="returnSectionPhotoSrc(scope.row.sid)" :key="returnSectionPhotoSrc(scope.row.sid)" :fit="fit"></el-avatar><br>
                     <el-link @click="showSection(scope.row.sid)">
                       <span style="font-size: small; text-align: center">{{scope.row.sectionName}}</span>
                     </el-link>

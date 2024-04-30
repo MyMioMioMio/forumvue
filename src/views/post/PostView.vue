@@ -48,6 +48,7 @@
             <el-image
                 style="width: 50px; height: 50px;box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.1)"
                 :src="returnSectionPhotoSrc(sectionData.sid)"
+                :key="returnSectionPhotoSrc(sectionData.sid)"
                 :fit="fit"
             >
             </el-image>
@@ -102,7 +103,8 @@
               <template v-slot="scope">
                 <el-row>
                   <el-col :span="2">
-                    <el-avatar :size="60" :src="returnUserPhotoSrc(scope.row.uid)" :fit="fit"></el-avatar>
+                    <el-avatar :size="60" :src="returnUserPhotoSrc(scope.row.uid)"
+                               :key="returnUserPhotoSrc(scope.row.uid)" :fit="fit"></el-avatar>
                     <br>
                     <span style="font-size: small">{{ scope.row.username }}</span><br>
                     <el-tag v-if="scope.row.uid == postUserVo.uid">楼主</el-tag>
@@ -111,12 +113,14 @@
                   <el-col :span="22" class="text-align-left">
                     <span class="text-common">{{ scope.row.replyDescription }}</span><br>
                     <i class="el-icon-time">{{ scope.row.replyDateTime }}</i>
-                    <span class="float-right">点赞预留位</span><br>
+                    <br>
                     <!--重写整个回复的回复, 完成-->
                     <el-link @click="showToReply(scope.row)"><i class="el-icon-s-comment">查看回复</i></el-link>
+                    <el-link @click="liked(scope.row)" style="margin-left: 15px"><i
+                        class="el-icon-thumb">点赞({{ scope.row.likes }})</i></el-link>
                     <br>
+                    <!--回复的回复-->
                     <div v-if="scope.row.toReplyVisible">
-                      <!--回复的回复-->
                       <template>
                         <el-table
                             :data="scope.row.toReplys"
@@ -127,7 +131,8 @@
                             <template v-slot="scope">
                               <el-row>
                                 <el-col :span="2">
-                                  <el-avatar :size="60" :src="returnUserPhotoSrc(scope.row.uid)" :fit="fit"></el-avatar>
+                                  <el-avatar :size="60" :src="returnUserPhotoSrc(scope.row.uid)"
+                                             :key="returnUserPhotoSrc(scope.row.uid)" :fit="fit"></el-avatar>
                                   <br>
                                   <span style="font-size: small">{{ scope.row.username }}</span><br>
                                   <el-tag v-if="scope.row.uid == postUserVo.uid">楼主</el-tag>
@@ -136,7 +141,11 @@
                                 <el-col :span="22" class="text-align-left">
                                   <span class="text-common">{{ scope.row.replyDescription }}</span><br>
                                   <i class="el-icon-time">{{ scope.row.replyDateTime }}</i>
-                                  <span class="float-right">点赞预留位</span>
+                                  <br>
+                                  <el-link @click="replyDescription='@' + scope.row.username + ':'"><i
+                                      class="el-icon-s-comment">回复</i></el-link>
+                                  <el-link @click="liked(scope.row)" style="margin-left: 15px"><i
+                                      class="el-icon-thumb">点赞({{ scope.row.likes }})</i></el-link>
                                 </el-col>
                               </el-row>
                             </template>
@@ -450,6 +459,7 @@ export default {
 
     //返回用户头像路径
     returnUserPhotoSrc(uid) {
+      //console.log(this.ip + "/users/download/" + uid);
       //console.log("src==>" + this.ip + "/users/download/" + uid);
       return this.ip + "/users/download/" + uid;
     },
@@ -542,6 +552,38 @@ export default {
     //返回楼数
     returnCountofAllReply(index) {
       return this.totalPage - (this.currentPage - 1) * this.pageSize - index;
+    },
+
+    //点赞功能
+    liked(row) {
+      //数据处理
+      let form = {
+        rid: row.rid,
+        uid: this.user.uid
+      }
+      //上传点赞
+      //设置axios跨域访问时携带凭证
+      axios.defaults.withCredentials = true;
+      axios.post(this.ip + "/replys/like", form)
+          .then(res => {
+            if (res.data.code == 80001) {
+              //点赞成功
+              row.likes++;
+              this.$message({
+                showClose: true,
+                message: res.data.msg,
+                type: 'success'
+              });
+            } else {
+              //点赞失败
+              this.$message({
+                showClose: true,
+                message: res.data.msg,
+                type: 'error'
+              });
+            }
+          });
+      //console.log(row);
     }
   },
   mounted() {

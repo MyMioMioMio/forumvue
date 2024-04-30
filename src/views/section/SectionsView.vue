@@ -59,7 +59,7 @@
                 <el-row>
                   <!--贴吧头像-->
                   <el-col :span="2">
-                    <el-avatar :size="60" :src="returnSectionPhotoSrc(scope.row.sid)" :fit="fit" shape="circle"></el-avatar>
+                    <el-avatar :size="60" :src="returnSectionPhotoSrc(scope.row.sid)" :key="returnSectionPhotoSrc(scope.row.sid)" :fit="fit" shape="circle"></el-avatar>
                   </el-col>
                   <!--帖子详情-->
                   <el-col :span="22">

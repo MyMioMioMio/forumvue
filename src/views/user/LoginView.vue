@@ -110,7 +110,7 @@ export default {
                 message: res.data.msg,
                 type: 'success'
               });
-              this.$router.push(res.data.data);
+              this.$router.back();
             } else {
               //登录失败
               this.$message({

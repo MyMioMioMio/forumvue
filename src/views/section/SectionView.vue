@@ -47,6 +47,7 @@
             <el-image
                 style="width: 200px; height: 200px;box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.1)"
                 :src="photoSrc"
+                :key="photoSrc"
                 :fit="fit"
             >
             </el-image>
@@ -97,7 +98,7 @@
               <template v-slot="scope">
                 <el-row>
                   <el-col :span="2">
-                    <el-avatar :size="50" :src="returnUserPhotoSrc(scope.row.uid)" :fit="fit"></el-avatar>
+                    <el-avatar :size="50" :src="returnUserPhotoSrc(scope.row.uid)" :key="returnUserPhotoSrc(scope.row.uid)" :fit="fit"></el-avatar>
                     <br>
                     <span style="font-size: small; text-align: center">{{ scope.row.username }}</span>
                   </el-col>
@@ -327,7 +328,7 @@ export default {
                 message: res.data.msg,
                 type: 'success'
               });
-              //设置用户头像路径
+              //设置贴吧头像路径
               this.photoSrc = this.ip + "/sections/download/" + this.sectionData.sid;
               //设置回显头像路径
               this.recallPhotoSrc = this.ip + "/sections/download/" + this.sectionData.sid;
