@@ -79,7 +79,8 @@
             </el-row>
             <span class="text-common">{{ postUserVo.postsDescription }}</span><br>
             <i class="el-icon-time">{{ postUserVo.postsDateTime }}</i>
-            <span class="float-right">点赞预留位</span>
+            <el-link @click="postLiked(postUserVo)" style="margin-left: 15px"><i
+                class="el-icon-thumb">点赞({{ postUserVo.likes }})</i></el-link>
           </el-col>
         </el-row>
         <el-divider></el-divider>
@@ -208,7 +209,7 @@
   </el-container>
 </template>
 <script>
-import axios from "axios";
+import axios, {post} from "axios";
 
 export default {
   data() {
@@ -248,7 +249,8 @@ export default {
         postsTitle: "",
         postsDescription: "",
         postsDateTime: "",
-        sid: ""
+        sid: "",
+        likes: "",
       },
       //登录标志
       loginFlag: false,
@@ -281,6 +283,7 @@ export default {
     };
   },
   methods: {
+    post,
     //获得贴吧信息
     getSection() {
       //设置axios跨域访问时携带凭证
@@ -554,7 +557,7 @@ export default {
       return this.totalPage - (this.currentPage - 1) * this.pageSize - index;
     },
 
-    //点赞功能
+    //回复点赞功能
     liked(row) {
       //数据处理
       let form = {
@@ -584,6 +587,37 @@ export default {
             }
           });
       //console.log(row);
+    },
+
+    //贴子点赞
+    postLiked(postdata) {
+      //数据处理
+      let form = {
+        pid: postdata.pid,
+        uid: this.user.uid
+      }
+      //设置axios跨域访问时携带凭证
+      axios.defaults.withCredentials = true;
+      //上传点赞
+      axios.post(this.ip + "/posts/like", form)
+          .then(res => {
+            if (res.data.code == 80001) {
+              //点赞成功
+              postdata.likes++;
+              this.$message({
+                showClose: true,
+                message: res.data.msg,
+                type: 'success'
+              });
+            } else {
+              //点赞失败
+              this.$message({
+                showClose: true,
+                message: res.data.msg,
+                type: 'error'
+              });
+            }
+          });
     }
   },
   mounted() {

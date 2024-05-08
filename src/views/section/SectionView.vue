@@ -109,6 +109,8 @@
                     </el-link>
                     <p style="font-size: large">{{ scope.row.postsDescription.slice(0, 50) + '...' }}</p>
                     <i class="el-icon-time">{{ scope.row.postsDateTime }}</i>
+                    <el-link @click="postLiked(scope.row)" style="margin-left: 15px"><i
+                        class="el-icon-thumb">点赞({{ scope.row.likes }})</i></el-link>
                   </el-col>
                 </el-row>
                 <!--                {{scope.row.postsTitle}}-->
@@ -617,6 +619,37 @@ export default {
     cancel() {
       this.updateDialogVisible = false;
       this.$router.go(0);
+    },
+
+    //贴子点赞
+    postLiked(postdata) {
+      //数据处理
+      let form = {
+        pid: postdata.pid,
+        uid: this.user.uid
+      }
+      //设置axios跨域访问时携带凭证
+      axios.defaults.withCredentials = true;
+      //上传点赞
+      axios.post(this.ip + "/posts/like", form)
+          .then(res => {
+            if (res.data.code == 80001) {
+              //点赞成功
+              postdata.likes++;
+              this.$message({
+                showClose: true,
+                message: res.data.msg,
+                type: 'success'
+              });
+            } else {
+              //点赞失败
+              this.$message({
+                showClose: true,
+                message: res.data.msg,
+                type: 'error'
+              });
+            }
+          });
     }
   },
   mounted() {
