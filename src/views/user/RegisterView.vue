@@ -141,6 +141,8 @@ export default {
       });
     },
 
+
+
     //注册
     register() {
       //设置axios跨域访问时携带凭证
